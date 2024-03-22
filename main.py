@@ -196,4 +196,168 @@ print("K2:", k2)
 
 #def decrypt_sdes():
 
+'''
+# encryption
+
+def des_encrypt(plaintext, key):
+    state = plaintext
+
+    # subkey generation (scheduling) = generate 2 subkeys
+    subkeys = generate_subkey(key)
+
+    # initial permutation
+    state = ip(state)
+
+    # 2 fiestel networks
+    for i in range(2):
+        state = feistel(state, subkeys[i])
+
+    # final permutation
+    state = ip_1(state)
+    
+    ciphertext = state
+
+    return ciphertext
+
+
+def generate_subkey(key):
+    # P10
+    key = p10(key)
+
+    # split key
+    key_l = key[:5]
+    key_r = key[5:]
+    
+    # LS-1
+    key_l_shifted = left_shift(key_l, 1)
+    key_r_shifted = left_shift(key_r, 1)
+
+    key = key_l_shifted + key_r_shifted
+
+    # P8 --> subkey 0
+    subkey_0 = p8(key)
+
+    # LS-2 
+    key_l_shifted = left_shift(key_l_shifted, 2)
+    key_r_shifted = left_shift(key_r_shifted, 2)
+
+    key = key_l_shifted + key_r_shifted
+
+    # P8 --> subkey 1
+    subkey_1 = p8(key)
+
+    return subkey_0, subkey_1
+
+
+def left_shift(input, shift_amount):
+    return input[shift_amount:] + input[:shift_amount]
+
+
+def feistel(state, subkey):
+    # split state
+    state_l = state[:4]
+    state_r = state[4:]
+
+    # first round function
+    f_state_r = round_function(state_r, subkey)
+
+    # XOR right side with left side of the state
+    state_l = xor(state_l, f_state_r)
+
+    state = state_r + state_l
+
+    return state
+
+
+def round_function(state, subkey):
+    # E/P (Expansion Permutation)
+    state = e_p(state)
+    
+    # XOR with subkey
+    state = xor(state, subkey)
+
+    # Sbox
+    state = sbox(state)
+
+    # P4
+    state = p4(state)
+
+    return state
+
+
+# === permutation & substitution functions === #
+def p10(input):
+    P10 = [2, 4, 1, 6, 3, 9, 0, 8, 7, 5]  # Fixed P10 permutation
+    output = [input[i] for i in P10]
+    return ''.join(output)
+    
+def p8(input):
+    P8 = [5, 2, 6, 3, 7, 4, 9, 8]  # Fixed P8 permutation
+    output = [input[i] for i in P8]
+    return ''.join(output)
+
+def p4(input):
+    P4 = [1, 3, 2, 0]  # Fixed P4 permutation
+    output = [input[i] for i in P4]
+    return ''.join(output)
+
+# IP (Initial Permuation)
+def ip(input):
+    IP = [1, 5, 2, 0, 3, 7, 4, 6]  # Fixed IP permutation
+    output = [input[i] for i in IP]
+    return ''.join(output)
+
+# IP**-1 (Final Permutation)
+def ip_1(input):
+    IP_1 = [3, 0, 2, 4, 6, 1, 7, 5]  # Fixed IP-1 permutation
+    output = [input[i] for i in IP_1]
+    return ''.join(output)
+
+# E/P (Expansion Permutation)
+def e_p(input):
+    E_P = [3, 0, 1, 2, 1, 2, 3, 0]  # Fixed E/P permutation
+    output = [input[i] for i in E_P]
+    return ''.join(output)
+
+def sbox(input):
+    S0 = [['01', '00', '11', '10'],
+          ['11', '10', '01', '00'],
+          ['00', '10', '01', '11'],
+          ['11', '01', '11', '10']]
+    
+    S1 = [['00', '01', '10', '11'],
+          ['10', '00', '01', '11'],
+          ['11', '00', '01', '00'],
+          ['10', '01', '00', '11']]
+
+    input_0 = input[:4] 
+    input_1 = input[4:]
+
+    row_s0 = int(input_0[0] + input_0[3], 2)
+    col_s0 = int(input_0[1] + input_0[2], 2)
+    row_s1 = int(input_1[0] + input_1[3], 2)
+    col_s1 = int(input_1[1] + input_1[2], 2)
+
+    output = S0[row_s0][col_s0] + S1[row_s1][col_s1]
+    return output
+
+def xor(a, b):
+    result = ''
+    for i in range(len(a)):
+        result += str(int(a[i]) ^ int(b[i]))
+    return result
+
+print("---------------------------S-DES Algorithm---------------------------")
+
+key = '1010000010'
+plaintext = '11010111'
+
+print("Key:", key)
+print("Plaintext:", plaintext)
+
+ciphertext = des_encrypt(plaintext, key)
+print("Ciphertext:", ciphertext)
+
+'''
+
 
