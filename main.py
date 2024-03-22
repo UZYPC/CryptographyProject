@@ -128,3 +128,72 @@ decrypted_message = decrypt_rsa(encrypted_message, private_key)
 end_time = time.time()
 print("Decryption time:", end_time - start_time, "seconds")
 print("Decrypted Message:", decrypted_message)
+
+
+# S-DES ALGORITHM
+# --------- KEY GENERATION PART ---------
+
+def sdes_randomkey():
+    key = ""
+    for _ in range(10):
+        key += str(random.randint(0, 1))
+    return key
+
+
+def p10_function(key):
+    # P10 permutation table from S-DES.pdf
+    P10 = [3, 5, 2, 7, 4, 10, 1, 9, 8, 6]
+
+    permuted_key = [key[i - 1] for i in P10]
+    return permuted_key
+
+def p8_function(key):
+    # P8 permutation table
+    P8 = [6, 3, 7, 4, 8, 5, 10, 9]
+    # Permute the key using P8 table
+    permuted_key = [key[i - 1] for i in P8]
+    return permuted_key
+
+def circular_left_shift(bits, shift):
+
+    return bits[shift:] + bits[:shift]
+
+
+key = "1010000010"  # 10-bit key from sdes_randomkey function
+print("Original Key:", key)
+
+# Permute key
+p10_key = p10_function(key)
+
+
+left_half = p10_key[:5]
+right_half = p10_key[5:]
+
+
+left_half_shifted = circular_left_shift(left_half, 1)
+right_half_shifted = circular_left_shift(right_half, 1)
+shifted_key = left_half_shifted + right_half_shifted
+
+k1 = p8_function(shifted_key)
+
+left_half_shifted_2 = circular_left_shift(left_half_shifted, 2)
+right_half_shifted_2 = circular_left_shift(right_half_shifted, 2)
+shifted_key_2 = left_half_shifted_2 + right_half_shifted_2
+
+k2 = p8_function(shifted_key_2)
+
+
+print("K1:", k1)
+print("K2:", k2)
+
+# --------- ENCRYPTION PART ---------
+
+
+
+
+#def encrypt_sdes():
+
+
+#def decrypt_sdes():
+
+
