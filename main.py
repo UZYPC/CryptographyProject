@@ -168,16 +168,19 @@ plaintext8 = "11100000"
 plaintext9 = "00000000"
 plaintext10 = "10010101"
 
+
+# Function to generate a random 10-bit key for S-DES
 def sdes_randomkey():
-    key = ""
+    sdes_random_key = ""
     for _ in range(10):
-        key += str(random.randint(0, 1))
-    return key
+        sdes_random_key += str(random.randint(0, 1))
+    return sdes_random_key
+
 
 # Shared (Secret) 10-bit key for S-DES
-key = "1010000010"#sdes_randomkey()
+sdes_key = sdes_randomkey()
 
-print("Original Key:", key)
+print("Original Key:", sdes_key)
 
 # S-DES S-Box matrices
 S0 = [
@@ -217,8 +220,6 @@ def switch(bit1, bit2):
     return bit2, bit1
 
 
-
-
 # Permutation functions for S-DES keys
 def p10_function(key):
     P10 = [3, 5, 2, 7, 4, 10, 1, 9, 8, 6]
@@ -227,6 +228,7 @@ def p10_function(key):
     return permuted_key
 
 
+# Permutation functions for S-DES keys
 def ip_function(key):
     IP = [2, 6, 3, 1, 4, 8, 5, 7]
 
@@ -255,12 +257,13 @@ def p4_function(key):
     return permuted_key
 
 
-# Key generation and permutation for S-DES
+# Function to perform circular left shift
 def circular_left_shift(bits, shift):
     return bits[shift:] + bits[:shift]
 
 
-p10_key = p10_function(key)
+# Generate sub-keys for S-DES
+p10_key = p10_function(sdes_key)
 left_half = p10_key[:5]
 right_half = p10_key[5:]
 
@@ -355,8 +358,8 @@ def encryption(plaintext):
     return ciphertext
 
 
-
-def encryption_withk1k2(plaintext,k1_key,k2_key):
+# Function for S-DES encryption to be used in Alice and Bob communication scenario
+def encryption_withk1k2(plaintext, k1_key, k2_key):
     ip_result = ip_function(plaintext)
 
     for i in range(len(ip_result)):
@@ -378,7 +381,6 @@ def encryption_withk1k2(plaintext,k1_key,k2_key):
     ciphertext = ip_inv_function(new_list)
 
     return ciphertext
-
 
 
 # Function for S-DES encryption
@@ -406,9 +408,8 @@ def decryption(ciphertext):
     return plaintext
 
 
-
-
-def decryption_withk1k2(ciphertext,k1_key,k2_key):
+# Function for S-DES decryption to be used in Alice and Bob communication scenario
+def decryption_withk1k2(ciphertext, k1_key, k2_key):
     ip_result = ip_function(ciphertext)
 
     for i in range(len(ip_result)):
@@ -434,57 +435,59 @@ def decryption_withk1k2(ciphertext,k1_key,k2_key):
 
 # Perform S-DES encryption and decryption testing
 for i in range(1, 11):
+    start_time = time.time()
     print("\nPlaintext", i, ":", eval("plaintext" + str(i)))
     print("Ciphertext", i, ":", encryption(eval("plaintext" + str(i))))
     print("Plaintext", i, ":", decryption(encryption(eval("plaintext" + str(i)))))
+    end_time = time.time()
+    print("Time taken:", end_time - start_time, "seconds")
 
 
+# Function to convert a string to bits
 def string_to_bits(text):
-        bit_blocks = []
-        for char in text:
-            bit_block = bin(ord(char))[2:].zfill(8)
-            bit_blocks.append(bit_block)
+    bit_blocks = []
+    for char in text:
+        bit_block = bin(ord(char))[2:].zfill(8)
+        bit_blocks.append(bit_block)
 
-        return bit_blocks
+    return bit_blocks
 
+
+# Function to convert bits to string
 def bits_to_string(bit_blocks):
-        characters = [chr(int(block, 2)) for block in bit_blocks]
+    characters = [chr(int(block, 2)) for block in bit_blocks]
+    original_string = ''.join(characters)
+    return original_string
 
-        original_string = ''.join(characters)
-
-        return original_string
 
 def bits_to_individual_bits(bit_blocks):
-        individual_bits = []
-        for block in bit_blocks:
-            for bit in block:
-                individual_bits.append(int(bit))
+    individual_bits = []
+    for block in bit_blocks:
+        for bit in block:
+            individual_bits.append(int(bit))
+    return individual_bits
 
-        return individual_bits
 
+# Functions to create 8-bit blocks
 def group_into_eights(individual_bits):
-        grouped_bits = []
-        for i in range(0, len(individual_bits), 8):
-            # Her 8 tamsayıyı bir grup oluştur
-            group = individual_bits[i:i + 8]
-            grouped_bits.append(group)
+    grouped_bits = []
+    for i in range(0, len(individual_bits), 8):
+        group = individual_bits[i:i + 8]
+        grouped_bits.append(group)
+    return grouped_bits
 
-        return grouped_bits
 
 def grouped_bits_to_bit_blocks(grouped_bits):
-        bit_blocks = []
-        for group in grouped_bits:
-            # Her bir gruptaki tamsayıları birleştirerek 8 bitlik bir blok elde et
-            block = ''.join(str(bit) for bit in group)
-            bit_blocks.append(block)
+    bit_blocks = []
+    for group in grouped_bits:
+        block = ''.join(str(bit) for bit in group)
+        bit_blocks.append(block)
 
-        return bit_blocks
-#alice bob simulation
+    return bit_blocks
 
 
-
+# Alice and Bob communication scenario
 def alice_bob():
-
     keysize = 512
 
     # Step 1: Generate RSA key pairs for Alice and Bob
@@ -505,32 +508,21 @@ def alice_bob():
     # Step 3: Alice generates an S-DES secret key and encrypts it with RSA
     alice_sdes_key = sdes_randomkey()  # 10-bit S-DES key
 
-
     encrypted_sdes_key = encrypt_rsa(alice_sdes_key, alice_public_key)
 
     # Step 4: Bob receives the encrypted S-DES key and decrypts it with RSA
     decrypted_sdes_key = decrypt_rsa(encrypted_sdes_key, bob_private)
 
     # Messages to be exchanged
-
-
-
     print("\n\n")
     input_text = input("Message: ")
-
     bit_blocks = string_to_bits(input_text)
-
-
-
     result = ""
-
 
     # Encrypt and decrypt messages
     print("\n--- Exchanging Messages ---")
-
     encrypted_message = []
     decrypted_message_list = []
-
 
     for i in range(len(bit_blocks)):
         messages = bit_blocks[i]
@@ -563,17 +555,12 @@ def alice_bob():
 
         result = result + original_text_2
 
-
-
-
-
-
     print("Alice -> Bob (Encrypted):", encrypted_message)
     print("Bob   -> Alice (Decrypted):", decrypted_message_list)
     print("Bob   -> Alice (Original Decrypted):", result)
 
 
-
+# Displaying Menu for Command Line Interface (CLI)
 def print_menu():
     print("\nMenu:")
     print("1. Generate a RSA key")
@@ -583,6 +570,8 @@ def print_menu():
     print("5. Alice and Bob communication scenario")
     print("q. Quit")
 
+
+# Command Line Interface (CLI)
 def cli():
     while True:
         print_menu()
@@ -595,27 +584,22 @@ def cli():
             print("Public Key (e, n):", public_key)
             print("Private Key (d, n):", private_key)
 
-
-
         elif choice == "2":
             message = input("Enter a message: ")
             public_key, private_key = generate_keypair(512)
-            encrypted_message = encrypt_rsa(message,public_key)
+            encrypted_message = encrypt_rsa(message, public_key)
             print("Encrypted message:", encrypted_message)
-            decrypted_message= decrypt_rsa(encrypted_message,private_key)
+            decrypted_message = decrypt_rsa(encrypted_message, private_key)
             print("Decrypted message:", decrypted_message)
-
 
         elif choice == "3":
             key = sdes_randomkey()
             print("10 bit SDES key:", key)
 
         elif choice == "4":
-
             message = input("Message: ")
             key = sdes_randomkey()
             bit_blocks = string_to_bits(message)
-
             result = ""
 
             # Encrypt and decrypt messages
@@ -659,7 +643,7 @@ def cli():
             print("Decrypted message:", result)
 
         elif choice == "5":
-          alice_bob()
+            alice_bob()
 
         elif choice == "q":
             print("Exiting...")
@@ -667,6 +651,7 @@ def cli():
 
         else:
             print("Invalid choice. Please try again.")
+
 
 if __name__ == "__main__":
     cli()
