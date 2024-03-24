@@ -1,3 +1,4 @@
+# Authors: Uzay Kayra Çetinkaya, Ali Ozan Başoğul, Mehmet Deniz Özkahraman
 import random
 import time
 
@@ -579,7 +580,7 @@ def cli():
 
         if choice == "1":
             print("Generating RSA key pair...")
-            keysize = input("Enter key bit size")
+            keysize = input("Enter key bit size: ")
             public_key, private_key = generate_keypair(int(keysize))
             print("Public Key (e, n):", public_key)
             print("Private Key (d, n):", private_key)
