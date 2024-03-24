@@ -168,8 +168,15 @@ plaintext8 = "11100000"
 plaintext9 = "00000000"
 plaintext10 = "10010101"
 
+def sdes_randomkey():
+    key = ""
+    for _ in range(10):
+        key += str(random.randint(0, 1))
+    return key
+
 # Shared (Secret) 10-bit key for S-DES
-key = "1010000010"
+key = sdes_randomkey()
+
 print("Original Key:", key)
 
 # S-DES S-Box matrices
@@ -210,12 +217,6 @@ def switch(bit1, bit2):
     return bit2, bit1
 
 
-# Function to generate a random 10-bit key for S-DES
-def sdes_randomkey():
-    key = ""
-    for _ in range(10):
-        key += str(random.randint(0, 1))
-    return key
 
 
 # Permutation functions for S-DES keys
@@ -354,6 +355,32 @@ def encryption(plaintext):
     return ciphertext
 
 
+
+def encryption_withk1k2(plaintext,k1_key,k2_key):
+    ip_result = ip_function(plaintext)
+
+    for i in range(len(ip_result)):
+        ip_result[i] = int(ip_result[i])
+
+    l_ip_result = ip_result[:4]
+    r_ip_result = ip_result[4:]
+
+    result_fk_l, result_fk_r = fK(l_ip_result, r_ip_result, k1_key)
+
+    switch_result = switch(result_fk_l, result_fk_r)
+
+    fk2_result = fK(switch_result[0], switch_result[1], k2_key)
+
+    new_list = []
+    for row in fk2_result:
+        new_list.extend(row)
+
+    ciphertext = ip_inv_function(new_list)
+
+    return ciphertext
+
+
+
 # Function for S-DES encryption
 def decryption(ciphertext):
     ip_result = ip_function(ciphertext)
@@ -379,9 +406,99 @@ def decryption(ciphertext):
     return plaintext
 
 
+
+
+def decryption_withk1k2(ciphertext,k1_key,k2_key):
+    ip_result = ip_function(ciphertext)
+
+    for i in range(len(ip_result)):
+        ip_result[i] = int(ip_result[i])
+
+    l_ip_result = ip_result[:4]
+    r_ip_result = ip_result[4:]
+
+    result_fk_l, result_fk_r = fK(l_ip_result, r_ip_result, k2_key)
+
+    switch_result = switch(result_fk_l, result_fk_r)
+
+    fk2_result = fK(switch_result[0], switch_result[1], k1_key)
+
+    new_list = []
+    for row in fk2_result:
+        new_list.extend(row)
+
+    plaintext = ip_inv_function(new_list)
+
+    return plaintext
+
+
 # Perform S-DES encryption and decryption testing
 for i in range(1, 11):
     print("\nPlaintext", i, ":", eval("plaintext" + str(i)))
     print("Ciphertext", i, ":", encryption(eval("plaintext" + str(i))))
     print("Plaintext", i, ":", decryption(encryption(eval("plaintext" + str(i)))))
 
+
+
+#alice bob simulation
+
+
+def alice_bob():
+
+    keysize = 512
+
+    # Step 1: Generate RSA key pairs for Alice and Bob
+    print("Generating RSA key pair for Alice...")
+    alice_public, alice_private = generate_keypair(keysize)
+    print("Alice's Public Key (e, n):", alice_public)
+    print("Alice's Private Key (d, n):", alice_private)
+
+    print("\nGenerating RSA key pair for Bob...")
+    bob_public, bob_private = generate_keypair(keysize)
+    print("Bob's Public Key (e, n):", bob_public)
+    print("Bob's Private Key (d, n):", bob_private)
+
+    # Step 2: Share public keys
+    alice_public_key = bob_public
+    bob_public_key = alice_public
+
+    # Step 3: Alice generates an S-DES secret key and encrypts it with RSA
+    alice_sdes_key = sdes_randomkey()  # 10-bit S-DES key
+
+
+    encrypted_sdes_key = encrypt_rsa(alice_sdes_key, alice_public_key)
+
+    # Step 4: Bob receives the encrypted S-DES key and decrypts it with RSA
+    decrypted_sdes_key = decrypt_rsa(encrypted_sdes_key, bob_private)
+
+    # Messages to be exchanged
+    messages = "10101011"
+
+    # Encrypt and decrypt messages
+    print("\n--- Exchanging Messages ---")
+
+    p10_key = p10_function(decrypted_sdes_key)
+    left_half = p10_key[:5]
+    right_half = p10_key[5:]
+
+    left_half_shifted = circular_left_shift(left_half, 1)
+    right_half_shifted = circular_left_shift(right_half, 1)
+    shifted_key = left_half_shifted + right_half_shifted
+
+    k1 = p8_function(shifted_key)
+
+    left_half_shifted_2 = circular_left_shift(left_half_shifted, 2)
+    right_half_shifted_2 = circular_left_shift(right_half_shifted, 2)
+    shifted_key_2 = left_half_shifted_2 + right_half_shifted_2
+
+    k2 = p8_function(shifted_key_2)
+
+
+    encrypted_message = encryption_withk1k2(messages,k1,k2)
+    decrypted_message = decryption_withk1k2(encrypted_message,k1,k2)
+    print("Alice -> Bob (Encrypted):", encrypted_message)
+    print("Bob   -> Alice (Decrypted):", decrypted_message)
+
+print("alice bob starts")
+
+alice_bob()
