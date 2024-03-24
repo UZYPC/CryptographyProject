@@ -439,8 +439,48 @@ for i in range(1, 11):
     print("Plaintext", i, ":", decryption(encryption(eval("plaintext" + str(i)))))
 
 
+def string_to_bits(text):
+        bit_blocks = []
+        for char in text:
+            bit_block = bin(ord(char))[2:].zfill(8)
+            bit_blocks.append(bit_block)
 
+        return bit_blocks
+
+def bits_to_string(bit_blocks):
+        characters = [chr(int(block, 2)) for block in bit_blocks]
+
+        original_string = ''.join(characters)
+
+        return original_string
+
+def bits_to_individual_bits(bit_blocks):
+        individual_bits = []
+        for block in bit_blocks:
+            for bit in block:
+                individual_bits.append(int(bit))
+
+        return individual_bits
+
+def group_into_eights(individual_bits):
+        grouped_bits = []
+        for i in range(0, len(individual_bits), 8):
+            # Her 8 tamsayıyı bir grup oluştur
+            group = individual_bits[i:i + 8]
+            grouped_bits.append(group)
+
+        return grouped_bits
+
+def grouped_bits_to_bit_blocks(grouped_bits):
+        bit_blocks = []
+        for group in grouped_bits:
+            # Her bir gruptaki tamsayıları birleştirerek 8 bitlik bir blok elde et
+            block = ''.join(str(bit) for bit in group)
+            bit_blocks.append(block)
+
+        return bit_blocks
 #alice bob simulation
+
 
 
 def alice_bob():
@@ -473,46 +513,7 @@ def alice_bob():
 
     # Messages to be exchanged
 
-    def string_to_bits(text):
-        bit_blocks = []
-        for char in text:
-            bit_block = bin(ord(char))[2:].zfill(8)
-            bit_blocks.append(bit_block)
 
-        return bit_blocks
-
-    def bits_to_string(bit_blocks):
-        characters = [chr(int(block, 2)) for block in bit_blocks]
-
-        original_string = ''.join(characters)
-
-        return original_string
-
-    def bits_to_individual_bits(bit_blocks):
-        individual_bits = []
-        for block in bit_blocks:
-            for bit in block:
-                individual_bits.append(int(bit))
-
-        return individual_bits
-
-    def group_into_eights(individual_bits):
-        grouped_bits = []
-        for i in range(0, len(individual_bits), 8):
-            # Her 8 tamsayıyı bir grup oluştur
-            group = individual_bits[i:i + 8]
-            grouped_bits.append(group)
-
-        return grouped_bits
-
-    def grouped_bits_to_bit_blocks(grouped_bits):
-        bit_blocks = []
-        for group in grouped_bits:
-            # Her bir gruptaki tamsayıları birleştirerek 8 bitlik bir blok elde et
-            block = ''.join(str(bit) for bit in group)
-            bit_blocks.append(block)
-
-        return bit_blocks
 
     print("\n\n")
     input_text = input("Message: ")
@@ -526,6 +527,10 @@ def alice_bob():
 
     # Encrypt and decrypt messages
     print("\n--- Exchanging Messages ---")
+
+    encrypted_message = []
+    decrypted_message_list = []
+
 
     for i in range(len(bit_blocks)):
         messages = bit_blocks[i]
@@ -546,8 +551,9 @@ def alice_bob():
 
         k2 = p8_function(shifted_key_2)
 
-        encrypted_message = encryption_withk1k2(messages, k1, k2)
-        decrypted_message = decryption_withk1k2(encrypted_message, k1, k2)
+        encrypted_message.append(encryption_withk1k2(messages, k1, k2))
+        decrypted_message = decryption_withk1k2(encrypted_message[i], k1, k2)
+        decrypted_message_list.append(decrypted_message)
 
         grouped_bits = group_into_eights(decrypted_message)
 
@@ -563,11 +569,104 @@ def alice_bob():
 
 
     print("Alice -> Bob (Encrypted):", encrypted_message)
-    print("Bob   -> Alice (Decrypted):", decrypted_message)
+    print("Bob   -> Alice (Decrypted):", decrypted_message_list)
     print("Bob   -> Alice (Original Decrypted):", result)
 
 
 
-print("alice bob starts")
+def print_menu():
+    print("\nMenu:")
+    print("1. Generate a RSA key")
+    print("2. RSA encryption and decryption")
+    print("3. Generate S-DES key")
+    print("4. Encrypt and decrypt message with S-DES")
+    print("5. Alice and Bob communication scenario")
+    print("q. Quit")
 
-alice_bob()
+def cli():
+    while True:
+        print_menu()
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            print("Generating RSA key pair...")
+            keysize = input("Enter key bit size")
+            public_key, private_key = generate_keypair(int(keysize))
+            print("Public Key (e, n):", public_key)
+            print("Private Key (d, n):", private_key)
+
+
+
+        elif choice == "2":
+            message = input("Enter a message: ")
+            public_key, private_key = generate_keypair(512)
+            encrypted_message = encrypt_rsa(message,public_key)
+            print("Encrypted message:", encrypted_message)
+            decrypted_message= decrypt_rsa(encrypted_message,private_key)
+            print("Decrypted message:", decrypted_message)
+
+
+        elif choice == "3":
+            key = sdes_randomkey()
+            print("10 bit SDES key:", key)
+
+        elif choice == "4":
+
+            message = input("Message: ")
+            key = sdes_randomkey()
+            bit_blocks = string_to_bits(message)
+
+            result = ""
+
+            # Encrypt and decrypt messages
+            print("\n--- Exchanging Messages ---")
+            encrypted_message = []
+            decrypted_message_list = []
+
+            for i in range(len(bit_blocks)):
+                messages = bit_blocks[i]
+
+                p10_key = p10_function(key)
+                left_half = p10_key[:5]
+                right_half = p10_key[5:]
+
+                left_half_shifted = circular_left_shift(left_half, 1)
+                right_half_shifted = circular_left_shift(right_half, 1)
+                shifted_key = left_half_shifted + right_half_shifted
+
+                k1 = p8_function(shifted_key)
+
+                left_half_shifted_2 = circular_left_shift(left_half_shifted, 2)
+                right_half_shifted_2 = circular_left_shift(right_half_shifted, 2)
+                shifted_key_2 = left_half_shifted_2 + right_half_shifted_2
+
+                k2 = p8_function(shifted_key_2)
+
+                encrypted_message.append(encryption_withk1k2(messages, k1, k2))
+                decrypted_message = decryption_withk1k2(encrypted_message[i], k1, k2)
+                decrypted_message_list.append(decrypted_message)
+
+                grouped_bits = group_into_eights(decrypted_message)
+
+                bit_blocks_new = grouped_bits_to_bit_blocks(grouped_bits)
+
+                original_text_2 = bits_to_string(bit_blocks_new)
+
+                result = result + original_text_2
+
+            print("Encrypted message:", encrypted_message)
+            print("Decrypted message in bits:", decrypted_message_list)
+            print("Decrypted message:", result)
+
+        elif choice == "5":
+          alice_bob()
+
+        elif choice == "q":
+            print("Exiting...")
+            break
+
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == "__main__":
+    cli()
