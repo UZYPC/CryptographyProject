@@ -175,7 +175,7 @@ def sdes_randomkey():
     return key
 
 # Shared (Secret) 10-bit key for S-DES
-key = sdes_randomkey()
+key = "1010000010"#sdes_randomkey()
 
 print("Original Key:", key)
 
@@ -472,32 +472,101 @@ def alice_bob():
     decrypted_sdes_key = decrypt_rsa(encrypted_sdes_key, bob_private)
 
     # Messages to be exchanged
-    messages = "10101011"
+
+    def string_to_bits(text):
+        bit_blocks = []
+        for char in text:
+            bit_block = bin(ord(char))[2:].zfill(8)
+            bit_blocks.append(bit_block)
+
+        return bit_blocks
+
+    def bits_to_string(bit_blocks):
+        characters = [chr(int(block, 2)) for block in bit_blocks]
+
+        original_string = ''.join(characters)
+
+        return original_string
+
+    def bits_to_individual_bits(bit_blocks):
+        individual_bits = []
+        for block in bit_blocks:
+            for bit in block:
+                individual_bits.append(int(bit))
+
+        return individual_bits
+
+    def group_into_eights(individual_bits):
+        grouped_bits = []
+        for i in range(0, len(individual_bits), 8):
+            # Her 8 tamsayıyı bir grup oluştur
+            group = individual_bits[i:i + 8]
+            grouped_bits.append(group)
+
+        return grouped_bits
+
+    def grouped_bits_to_bit_blocks(grouped_bits):
+        bit_blocks = []
+        for group in grouped_bits:
+            # Her bir gruptaki tamsayıları birleştirerek 8 bitlik bir blok elde et
+            block = ''.join(str(bit) for bit in group)
+            bit_blocks.append(block)
+
+        return bit_blocks
+
+    print("\n\n")
+    input_text = input("Message: ")
+
+    bit_blocks = string_to_bits(input_text)
+
+
+
+    result = ""
+
 
     # Encrypt and decrypt messages
     print("\n--- Exchanging Messages ---")
 
-    p10_key = p10_function(decrypted_sdes_key)
-    left_half = p10_key[:5]
-    right_half = p10_key[5:]
+    for i in range(len(bit_blocks)):
+        messages = bit_blocks[i]
 
-    left_half_shifted = circular_left_shift(left_half, 1)
-    right_half_shifted = circular_left_shift(right_half, 1)
-    shifted_key = left_half_shifted + right_half_shifted
+        p10_key = p10_function(decrypted_sdes_key)
+        left_half = p10_key[:5]
+        right_half = p10_key[5:]
 
-    k1 = p8_function(shifted_key)
+        left_half_shifted = circular_left_shift(left_half, 1)
+        right_half_shifted = circular_left_shift(right_half, 1)
+        shifted_key = left_half_shifted + right_half_shifted
 
-    left_half_shifted_2 = circular_left_shift(left_half_shifted, 2)
-    right_half_shifted_2 = circular_left_shift(right_half_shifted, 2)
-    shifted_key_2 = left_half_shifted_2 + right_half_shifted_2
+        k1 = p8_function(shifted_key)
 
-    k2 = p8_function(shifted_key_2)
+        left_half_shifted_2 = circular_left_shift(left_half_shifted, 2)
+        right_half_shifted_2 = circular_left_shift(right_half_shifted, 2)
+        shifted_key_2 = left_half_shifted_2 + right_half_shifted_2
+
+        k2 = p8_function(shifted_key_2)
+
+        encrypted_message = encryption_withk1k2(messages, k1, k2)
+        decrypted_message = decryption_withk1k2(encrypted_message, k1, k2)
+
+        grouped_bits = group_into_eights(decrypted_message)
+
+        bit_blocks_new = grouped_bits_to_bit_blocks(grouped_bits)
+
+        original_text_2 = bits_to_string(bit_blocks_new)
+
+        result = result + original_text_2
 
 
-    encrypted_message = encryption_withk1k2(messages,k1,k2)
-    decrypted_message = decryption_withk1k2(encrypted_message,k1,k2)
+
+
+
+
     print("Alice -> Bob (Encrypted):", encrypted_message)
     print("Bob   -> Alice (Decrypted):", decrypted_message)
+    print("Bob   -> Alice (Original Decrypted):", result)
+
+
 
 print("alice bob starts")
 
